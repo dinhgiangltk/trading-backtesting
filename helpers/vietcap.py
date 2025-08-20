@@ -7,12 +7,13 @@ class VietCapClient:
         "User-Agent": "Chrome/120.0.0.0",
         "Referer": "https://trading.vietcap.com.vn/"
     }
+    root_api = "https://trading.vietcap.com.vn"
     today = pd.Timestamp.today().normalize()
     yesterday = today - pd.DateOffset(days=1)
     yesterday_yymmdd = yesterday.strftime("%Y-%m-%d")
 
     def query_graphql(self, query:str, variables={}, **kwargs):
-        url = "https://trading.vietcap.com.vn/data-mt/graphql"
+        url = f"{self.root_api}/data-mt/graphql"
         default_params = {
             "variables": variables,
             "query": query
@@ -64,6 +65,18 @@ class VietCapClient:
             df = pd.json_normalize(data.get("CompaniesListingInfo"))
             df.rename(columns=lambda x: x[x.find(".")+1:] if isinstance(x,str) else x, inplace=True)
             return df
+
+    def get_stock_by_group(self, group:str):
+        url = f"{self.root_api}/api/price/symbols/getByGroup"
+        params = {
+            "group": group
+        }
+        response = requests.get(url, params=params, headers=self.headers)
+        if response.status_code == 200:
+            data = response.json()
+            df = pd.DataFrame(data)
+            return df
+
 
     def get_historical_price(self, ticker:str, from_date="2020-10-01", to_date=yesterday_yymmdd):
         query = """
